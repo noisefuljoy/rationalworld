@@ -54,8 +54,6 @@ MIDIIn.connectAll;
 
 /*control buses */
 ~maingrainDurBus = Bus.control(s, 1).set(0.5);
-
-
 ~fmodBus = Bus.control(s, 1).set(0.01);
 ~widthBus = Bus.control(s, 1).set(0.5);
 ~phasemodBus = Bus.control(s,1).set(0.1);
@@ -77,7 +75,6 @@ MIDIIn.connectAll;
 
 /*	~tapecombC.set(\mix, 0.5);
 	~toycombC.set(\mix, 0.5);*/
-
 ~toycombC = Synth(\toycomb, [\in, ~toycombBus,\mix,0.5,\out,~channels[4] ], ~effectGroup);
 
 ~tapecombC = Synth(\tapecomb, [\in, ~tapecombBus,\mix,0.5,\out,~channels[5] ], ~effectGroup);
@@ -231,10 +228,7 @@ fork{
 ~win2 = Buffer.sendCollection(s, Signal.hanningWindow(1024));
 ~win3 = Buffer.sendCollection(s, Signal.welchWindow(1024));
 
-
-
 3.0.wait;
-
 ~baseFreqs = [32.7, 65.41, 130.81, 261.63, 523.25];
 
 
@@ -285,7 +279,26 @@ fork{
 
 ~defChoose = 0;
 
+MIDIdef.cc(\white_control, {|val, num, cc, chan|
+	[val, num,cc, chan].postln;
+	case
+	{ num == 40 } { if ( val == 127, {
 
+Ndef(\sdr).fadeTime = 5;
+
+Ndef(\sdr, {
+
+	var sig = SoundIn.ar([4,5]);
+
+	sig = sig;
+
+
+}).play;
+	}, {
+		Ndef(\sdr).free;
+
+	}); };
+});
 
 MIDIdef.cc(\firstController, {|val, num, cc, chan|
 		[val, num, cc, chan].postln;
@@ -469,9 +482,6 @@ MIDIdef.cc(\firstController, {|val, num, cc, chan|
 
 MIDIdef.noteOn(\noteon, {|vel note chan srcid|
 
-
-
-
 	case
 	{ chan == 0 }
 	{
@@ -612,7 +622,7 @@ if(~notes[chan][note].isNil, {
 
 			});
 	}
-	{ chan == 8 }
+	{ chan == 9 }
 	{
 			//~katinka.sendMsg("/isadora/1", 0);
 
