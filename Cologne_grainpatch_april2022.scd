@@ -5,6 +5,9 @@ granulaire patch checken
 ritmische klanken aan nanopad
 opties voor gamepad
 
+frequentie op web sdr: 7074.72
+
+
 */
 
 (
@@ -45,8 +48,8 @@ SynthDef(\compressor, {|out=0 inBus thresh=0.1 ratio=0.1 gain=1|
 SynthDef(\radiorecorder, {|in bufnum|
 	var input = In.ar(in, 1);
 	input = Limiter.ar(input,1, 0.001);
-	input = Compander.ar(input, input, 0.1, 1, 0.1, 0.001, 0.1,10);
-	//input = Compander.ar(input, input, 0.001,1,0.01,0.001,0.1,50);
+	//input = Compander.ar(input, input, 0.01, 1, 0.01, 0.001, 0.1,1000);
+	input = Compander.ar(input, input, 0.001,1,0.01,0.001,0.1,100);
 	//for hardware input
 	//RecordBuf.ar(SoundIn.ar(in),bufnum);
 	//for bus
@@ -103,13 +106,13 @@ SynthDef(\radioplaypattern, {|out=0 ampBus lengthBus start=0 endBus octave=1 tri
 SynthDef(\zitarRecorder, {|in=0 amplitudeBus fftbuf recbuf|
 var input = SoundIn.ar(in);
 var chain = FFT(fftbuf, input);
-var onsets = Onsets.kr(chain,0.3);
+var onsets = Onsets.kr(chain,0.15);
 var amplitude = Amplitude.kr(input);
 
-input = Compander.ar(input, input, 0.001,1,0.001,0.001,0.1,500);
+		input = Compander.ar(input, input, 0.1,1,0.1,0.001,0.1,6);
 //amplitude.poll;
 RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
-Out.kr(amplitudeBus, amplitude); }).add;
+Out.kr(amplitudeBus, amplitude); }).store;
 
 
 //3rd generation granulation
@@ -184,12 +187,9 @@ SynthDef(\pumper, {|in out amp=0.5|
 /*
 ~sideChainer.free;
 ~sideChainer.set(\ratio, 0.8);*/
-~sideChainer = Synth(\sidechainer, [\inBus, ~sidechainBus, \controlBus, ~controlBus, \thresh, 0.1, \ratio,0.8,\volume,0.75], ~compressGroup);
+~sideChainer = Synth(\sidechainer, [\inBus, ~sidechainBus, \controlBus, ~controlBus, \thresh, 0.1, \ratio,0.8,\volume,1.0], ~compressGroup);
 
-~snareverbsynth = Synth(\snareverb, [\inBus, ~snareverbBus, \mix, 0.2, \room, 0.4, \out, ~compressBus], ~gerriGroup,\addToTail );
-
-~drumcompressor = Synth(\compressor, [\inBus, ~compressBus, \thresh, 0.01, \ratio,0.1,\gain,1], ~compressGroup, \addAfter);
-		//~drumcompressor.set(\ratio,0.1);
+//~drumcompressor.set(\ratio,0.1);
 
 //buses for record sample loop
 ~vectorBuses = Array.fill(2, { Array.fill(2, { Bus.audio(s, 1); }); });
@@ -722,75 +722,6 @@ if ( num == 10,
 
 
 
-~velpaddurSpec = [0.1,1.5,-3,0.001].asSpec;
-~velfloordurSpec = [0.1,1.5,-3,0.001].asSpec;
-~velkickdurSpec = [0.65,0.15,3,0.001].asSpec;
-~velsnaredurSpec = [0.05,0.75,3,0.001].asSpec;
-~velhatdurSpec = [0.45,0.025,-0.5,0.001].asSpec;
-~velampSpec = [0.001,1.0,\exp,0.001].asSpec;
-~kickvelampSpec = [0.001,1.0,\linear,0.001].asSpec;
-
-
-
-~velfloorratioSpec = [0,36,-2,1].asSpec;
-~velhatratioSpec = [0,64,3,1].asSpec;
-~velkickratioSpec = [0,12,-2,1].asSpec;
-~velsnareratioSpec = [0,48,-2,1].asSpec;
-~velpadratioSpec = [0,24,-2,1].asSpec;
-
-
-//~midinotes = [36,45,46,72,58,38,39,50];
-
-//~midinotes = [35,50,46,36,38,39,58,72];
-// 36 - kick
-//46 - snare
-//45 - floor
-// 50 - bekkentje
-// rest is sample pad
-
-// FLUTE MODE
-	~floor_sample = { ~bike0smpls[~samNum1]; };
-	~hat_sample = { ~bike1smpls[~samNum2]; };
-	~snare_sample = { ~recrecBufs[0] };
-	~kick_sample =  { ~fbrecBufs[0][0] };
-	~sampad_1 = {  ~fbrecBufs[1][0] };
-	~sampad_2 = { ~recrecBufs[1] };
-	~sampad_3 = { ~fbrecBufs[0][1] };
-	~sampad_4 = { ~fbrecBufs[1][1] };
-
-/*
-	~floor_ratio = { ~drumscale[~velfloorratioSpec.map(vel/127)] };
-	~hat_ratio = { ~drumscale[~velhatratioSpec.map(vel/127)] };
-	~snare_ratio = { ~drumscale[~velsnareratioSpec.map(vel/127)] };
-	~kick_ratio = { ~drumscale[~velkickratioSpec.map(vel/127)] };
-	~pad_ratio = { ~drumscale[~velpadratioSpec.map(vel/127)] };
-*/
-
-//drumratios
-~drumscale = ~otonratios[0];
-
-
-2.0.wait;
-
-
-//~volumeResp.remove;
-//~volumeResp.remove;
-//Server.default.makeGui
-
-
-
-
-
-	Ndef(\directIn, {
-	var sig = SoundIn.ar(0)*2.25;
-	sig = sig!2;
-	}).play;
-
-/*
-		Ndef(\directIn, {
-	var sig = SoundIn.ar(2)*1;
-	sig = sig!2;
-	}).play;*/
 
 
 

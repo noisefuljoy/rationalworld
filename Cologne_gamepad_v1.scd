@@ -1,3 +1,5 @@
+fork{
+
 
 (
 Tdef( 'tryOpenHID' , {
@@ -31,40 +33,7 @@ Tdef( 'tryOpenHID' , {
 Tdef( 'tryOpenHID' ).play;
 
 
-/*
-HID.debug = false;
-~myhid.postUsages;
-*/
 
-SynthDef(\radioplaypattern, {|out=0 ampBus lengthBus start=0 endBus octave=1 trig=1 reverse=1 bufnum envbuf xpos=0 ypos=0 vectorOut nyquist|
-	//var trigger = EnvGen.kr(Env([0,1,0],[0.001,0.001]),trig);
-	var amp = In.kr(ampBus, 1);
-	var end = In.kr(endBus, 1);
-	var length = In.kr(lengthBus, 1);
-	var env = Osc1.ar(envbuf, length*Rand(1.0,2.0));
-	var sig = BufRd.ar(1, bufnum, Phasor.ar(trig, BufRateScale.kr(bufnum)*reverse*octave,start,end ),loop: 1) * env * 0.5;
-	//var sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum),trig, loop: 1);
-	//Out.ar(out, Pan2.ar(sig, LFNoise1.kr(Rand(0.8,3.2)).range(pan,pan+0.25)));
-	//Out.ar(out, Pan4.ar(sig, xpos, ypos));
-	sig = LPF.ar(sig, nyquist);
-			sig = HPF.ar(sig, 400);
-			sig = HPF.ar(sig, 400);
-	Out.ar(out, Pan2.ar(sig*amp, LFNoise0.kr(6.4).range(-1.0,1.0) ));
-	/*
-	Out.ar(out, Pan2.ar(sig*amp,LFNoise0.kr(3.2).range(-1.0,1.0)) );
-
-	Out.ar(out, PanAz.ar(6, sig*amp,
-				LFNoise0.kr(3.2).range(0.0,1.0),1.0,6.0,0.5));
-			*/
-	//Out.ar(out, sig*amp);
-
-	}).store;
-
-SynthDef(\kick, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
-	var env, sig;
-	env = EnvGen.ar(Env.perc(0.001, release),doneAction: 2);
-	sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
-	Out.ar(out, Pan2.ar( sig*env*amp, pan)); }).store;
 
 SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
 	var env, sig;
@@ -165,67 +134,11 @@ SynthDef(\magic_drone,{|out=0 amp=1.0 gate=1 ratio=1|
 }).store;
 
 
-SynthDef(\sjoerd_in, {|in=0 out=0 amp=0.8 gate=1 delAmount=0|
-
-	var env, sig, delsig;
-	env = EnvGen.ar(Env.adsr(3.0,0.1,1,4.0),gate, doneAction: 2);
-	sig = SoundIn.ar(in);
-
-
-	sig = HPF.ar(sig, 35);
-	sig = MidEQ.ar(sig,230,0.6,-8);
-	sig = MidEQ.ar(sig,2000,0.6,5);
-	delsig = sig;
-	3.do{|i| var del = (i+1)*0.15;
-	delsig = AllpassC.ar(delsig,del,SinOsc.kr(0.003).range(0.01,del),LFNoise1.kr(del).range(1.0,8.0),0.25,delsig*0.9);
-	};
-	/*
-	3.do{|i| var del = (i+1)*0.1;
-	delsig = CombC.ar(delsig,del,SinOsc.kr(del*0.001).range(0.01,del),LFNoise1.kr(del).range(1.0,3.0),0.3,delsig*0.7);
-	};
-	*/
-	sig = ((1-delAmount)*sig) + (delAmount * delsig);
-	Out.ar(out, Pan2.ar(sig*env*amp,0)    );
-
-}).store;
-
-
-
-SynthDef(\mari_in, {|in=0 out=0 amp=0.8 gate=1 delAmount=0 bpAmount=0|
-
-	var env, sig, bpsig, delsig;
-	env = EnvGen.ar(Env.adsr(3.0,0.1,1,4.0),gate, doneAction: 2);
-	sig = SoundIn.ar(in);
-
-
-	sig = HPF.ar(sig, 100);
-	sig = MidEQ.ar(sig,230,0.6,-12);
-	sig = MidEQ.ar(sig,1000,0.6,3);
-	sig = MidEQ.ar(sig,2000,0.6,8);
-	/*
-	bpsig = BPF.ar(sig, 1000,0.3,4.0).tanh;
-	sig = ((1-bpAmount)*sig) + (bpAmount * bpsig);
-	*/
-	delsig = sig;
-
-
-	//delsig = PitchShift.ar(sig,0.2,1.15,0.1,0.1);
-
-	3.do{|i| var del = (i+1)*0.15;
-	delsig = AllpassC.ar(delsig,del,SinOsc.kr(0.003).range(0.01,del),LFNoise1.kr(del).range(1.0,8.0),0.25,delsig*0.9);
-	};
-	3.do{|i| var del = (i+1)*0.1;
-	delsig = CombC.ar(delsig,del,SinOsc.kr(del*0.001).range(0.01,del),LFNoise1.kr(del).range(1.0,3.0),0.3,delsig*0.7);
-	};
-
-	sig = ((1-delAmount)*sig) + (delAmount * delsig);
-	Out.ar(out, Pan2.ar(sig*env*amp,0));
-}).store;
-
-
-
 // a custom envelope
-SynthDef(\field_grain, { |out=0, gate = 1, amp = 1, sndbuf, envbuf, trate=10 dur=0.1|
+~winenv = Env([0, 1, 0], [0.5, 0.5], [8, -8]);
+~window = Buffer.sendCollection(s, ~winenv.discretize, 1);
+
+SynthDef(\field_grain, { |out=0, gate = 1, amp = 1,pos=0,sndbuf, envbuf, trate=100 dur=0.25|
     var sig, pan, env, freqdev;
 
     env = EnvGen.kr(
@@ -236,20 +149,10 @@ SynthDef(\field_grain, { |out=0, gate = 1, amp = 1, sndbuf, envbuf, trate=10 dur
 
 
     Out.ar(out,
-        GrainBuf.ar(2, Impulse.kr(trate), dur, sndbuf, LFNoise1.kr.range(0.5, 2),
-			LFNoise2.kr(0.4).range(0, 1), 2, FSinOsc.kr(LFNoise0.kr(3.2).range(0.1,60.0)).range(-1.0,1.0), envbuf) * env)
+        GrainBuf.ar(2, Impulse.kr(trate), dur, sndbuf, 1,
+			pos, 2, FSinOsc.kr(LFNoise0.kr(3.2).range(0.1,60.0)).range(-0.1,0.1), envbuf) * env)
 }).store;
 
-
-SynthDef(\zitarRecorder, {|in=0 amplitudeBus fftbuf recbuf|
-var input = SoundIn.ar(in);
-var chain = FFT(fftbuf, input);
-var onsets = Onsets.kr(chain,0.3);
-
-//input = Compander.ar(input, input, 0.001,1,0.001,0.001,0.1,500);
-//amplitude.poll;
-RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
-}).store;
 
 ~nyquist = s.sampleRate * 0.5;
 
@@ -260,14 +163,6 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 ~ratioSpec = [0, 15, \linear, 1].asSpec;
 
 ~ratios = [0.25,0.25,0.5,0.75,0.85,0.9,1,1.1,1.2,1.3,1.4,1.5,1.75,1.8,1.9,2.0];
-
-~lengthSpec = [1.0,0.001,\exp].asSpec;
-~trateSpec = [1.0,500.0,\exp].asSpec;
-//~lengthSpec = [0.001, 1.0,\linear].asSpec;
-//~endSpec = [0.001, 1.0,\linear].asSpec;
-~endSpec = [1.0,0.0001,\exp].asSpec;
-~clockSpec = [0.5, 3.0, \exp].asSpec;
-~startSpec = [0.0,0.9,\linear].asSpec;
 
 ~mainGroup = Group.new;
 ~fieldrecGroup = Group.new(~mainGroup);
@@ -300,7 +195,7 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 ~hand_files = "Drums/Hand_Drum/*.wav".pathMatch;
 ~hand_drums = ~hand_files.collect({|i| Buffer.read(s, i); });
 
-~field_rec_files = "field_recs/*.wav".pathMatch;
+~field_rec_files = (Platform.resourceDir +/+ "sounds/field_recs/*.wav").pathMatch;
 ~field_recs = ~field_rec_files.collect({|sample| Buffer.read(s, sample); });
 ~grainfield_recs = ~field_rec_files.collect({|sample| Buffer.readChannel(s, sample, channels: [0] ); });
 
@@ -312,15 +207,6 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 ~fieldrecSwitch = ~field_recs.size - 1;
 ~fieldrecnum = 0;
 
-~lengthBus = Bus.control(s, 1).set(0.1);
-~startBus = Bus.control(s, 1).set(0.0);
-~patAmpBus = Bus.control(s, 1).set(1.0);
-
-~endBus = Bus.control(s, 1).set(~recBufs[~samNum1].numFrames);
-~clock = TempoClock.new;
-
-~sine = Env.sine.discretize(1024).putLast(0);
-~sineEnv = Buffer.sendCollection(s, ~sine, 1);
 
 ~winenv = Env([0, 1, 0], [0.5, 0.5], [8, -8]);
 ~window = Buffer.sendCollection(s, ~winenv.discretize, 1);
@@ -383,7 +269,7 @@ HIDdef.usage( \main_but_2, { |value|
 HIDdef.usage( \main_but_3, { |value|
 	if ( value == 1, {
 		if ( ~fieldrecSwitch == 0, { "play field rec".postln;
-			Synth(\field_rec, [\gate,1,\bufnum,~field_recs[~fieldrecnum] ], ~fieldrecGroup);
+			Synth(\field_grain, [\gate,1,\bufnum,~grainfield_recs[~fieldrecnum], \envbuf, ~window], ~fieldrecGroup);
 			~fieldrecSwitch = 1;
 
 		},
@@ -401,16 +287,23 @@ HIDdef.usage( \main_but_4, { |value|
 	}, \b8 );
 
 
+
+	~fr_trateRange = [1, 500, \exp,1].asSpec;
+	~fr_durRange = [2.0, 0.001, \linear,0.001].asSpec;
+	~fr_posRange = [0.0, 0.95, \linear,0.001].asSpec;
+
 /* eerste joystick */
 HIDdef.usage( \x_ax_1, { |value|
 	if ( ~freezeSwitch == 0, {
 		~fmGroup.set(\mod1, ~modRange.map(value));
+			~fieldrecGroup.set(\trate, ~fr_trateRange.map(value));
 	});
 
 	}, \X );
 HIDdef.usage( \y_ax_1, { |value|
 	if ( ~freezeSwitch == 0, {
 		~fmGroup.set(\mod2, ~modRange.map(value));
+		~fieldrecGroup.set(\dur, ~fr_durRange.map(value));
 	});
 	}, \Joystick );
 HIDdef.usage( \joy_but_1, { |value|  value.postln; }, \b11 );
@@ -419,6 +312,7 @@ HIDdef.usage( \joy_but_1, { |value|  value.postln; }, \b11 );
 HIDdef.usage( \x_ax_2, { |value|
 	if ( ~freezeSwitch == 0, {
 		~fmGroup.set(\mod3, ~modRange.map(value));
+		~fieldrecGroup.set(\pos, ~fr_posRange.map(value));
 	});
 	}, \Y );
 HIDdef.usage( \y_ax_2, { |value| if ( ~freezeSwitch == 0, {
@@ -434,10 +328,6 @@ HIDdef.usage( \joy_but_2, { |value|  value.postln; }, \b12 );
 
 
 
-Server.default.makeGui
-
-
-s.boot;
 
 
 
@@ -445,8 +335,8 @@ Ndef(\sjoerd_in, {
 	var sig = SoundIn.ar(0);
 
 	sig = HPF.ar(sig, 35);
-	sig = MidEQ.ar(sig,230,0.6,-8);
-	sig = MidEQ.ar(sig,2000,0.6,5);
+	//sig = MidEQ.ar(sig,230,0.6,-8);
+	//sig = MidEQ.ar(sig,2000,0.6,5);
 
 
 	sig = sig!2;
@@ -454,97 +344,11 @@ Ndef(\sjoerd_in, {
 }).play;
 
 
-Ndef(\mariana_in, {
-	var sig = SoundIn.ar(1);
-
-	sig = HPF.ar(sig, 35);
-	sig = MidEQ.ar(sig,220,0.7,-12);
-	sig = MidEQ.ar(sig,1100,0.6,3);
-	sig = MidEQ.ar(sig,5000,0.8,2);
-
-	sig = Compander.ar(sig, sig,0.3,1.0,0.2,0.001,0.1,2);
-
-	sig = sig!2;
-
-}).play;
 
 
 
 
-
-
-Ndef(\t,{
-
-	var sig = VarSaw.ar(FSinOsc.kr(0.01).range(97.5,98.5),0,FSinOsc.kr(0.02).range(0.2,0.8),0.3);
-	sig = MoogFF.ar(sig, SinOsc.kr(LFNoise0.kr(0.4).range(0.001,0.2)).range(50,900),3,0,0.5,sig*0.5);
-	sig = AllpassC.ar(sig,0.1,SinOsc.kr(0.003).range(0.001,0.1),SinOsc.kr(0.003).range(1.0,11.0),0.5,sig*0.5);
-	sig = LPF.ar(sig, 900);
-	sig = LPF.ar(sig, 900,4);
-
-	Pan2.ar(sig, SinOsc.kr(0.0025).range(-1.0,1.0));
-
-
-}).play;
-
-
-~freqRange = [500, 5000, \exponential].asSpec; // create a frequency range
-
-HIDdef.usage( \freq, { |value| Ndef( \sinewave ).set( \freq, ~freqRange.map( value ) ); }, \X );
-HIDdef.usage( \amp, { |value| Ndef( \sinewave ).set( \amp, value ); }, \Y );
-
-
-Ndef( \sinewave ).free;
-
-Quarks.gui
-
-
-
-
-(
-{
-    var ctls = [
-        // freq, phase, amp
-        [LFNoise1.kr(0.5).range(300, 310), 0, 1],
-        [LFNoise1.kr(0.5).exprange(3, 310), 0, 1],
-        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
-        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
-        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
-        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1]
-    ];
-    FM7.arAlgo(1, ctls, MouseX.kr(0, 2))
-}.play
-
-)
-
-
-(
-// Courtesy Fredrik Olofsson (2008)
-Routine.run{
-    var syn, time = 3; // Allow each patch to run for 16sec / 8bars
-    inf.do{|i|
-        ("// FM7 patch"+i).post;
-        syn= ("
-            (
-            var x= #"++({{{ |i| rrand(0.5, 1.5).round(0.5)}!4}!3}!6).asCompileString++";
-            var y= #"++({{{ |i| rrand(0.2, 1.6).round(0.5)}!4}!6}!6).asCompileString++";
-            {
-                var ctls= x.collect{|a| a.collect{|b| LFSaw.kr(*b)}};
-                var mods= y.collect{|a| a.collect{|b| LFPar.kr(*b)}};
-                var chans= #[0, 1];
-                FM7.ar(ctls, mods).slice(chans)*0.5;
-            }.play)").postln.interpret;
-        time.wait;
-        syn.free;
-    };
 };
-)
-
-(
-// Courtesy Fredrik Olofsson (2008), edited by <sk>
-// FM7 patch 4 generated on Thu Jun 26 18:27:12 2008
-
-
-
 
 
 
