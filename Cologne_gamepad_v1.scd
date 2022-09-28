@@ -32,14 +32,13 @@ Tdef( 'tryOpenHID' , {
 
 Tdef( 'tryOpenHID' ).play;
 
-
-
-
-SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
-	var env, sig;
+SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0 phasemIndexBus|
+	var env, sig,phasemIndex;
+	phasemIndex = In.kr(phasemIndexBus, 1);
 	env = EnvGen.ar(Env.perc(0.001, release),doneAction: 2);
-	sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
-	Out.ar(out, sig*env*amp, pan); }).store;
+	//sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
+	sig = SinOsc.ar(440, LFSaw.kr(LFNoise0.kr(16.8).range(0.1,85.0),mul:phasemIndex).range(-2pi,2pi),0.5);
+	Out.ar(out, sig*env*amp); }).store;
 
 SynthDef(\perc_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	var sig,drysig, wetsig;
@@ -51,6 +50,25 @@ SynthDef(\perc_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	sig = ((1-mix)*drysig) + (mix*wetsig);
 	Out.ar(out, Pan2.ar(sig*amp, SinOsc.kr(LFNoise0.kr(0.8).range(0.1,80.0)).range(-0.25,0.25)));
 }).store;
+
+SynthDef(\grain_perc, {|in=0 out=0 amp=0.25 mix=0.0|
+	var sig,drysig, wetsig;
+	sig = In.ar(in, 1);
+	//wetsig = drysig;
+
+			sig = PitchShift.ar(sig, 0.2, SinOsc.kr(0.01).range(0.1,0.25),0.1,0.1);
+	sig = GrainIn.ar(1, Impulse.kr(SinOsc.kr(LFNoise2.kr(3.2).range(1,92)).range(35,350)),LFNoise0.kr(1.6).range(0.05,0.3), sig);
+
+
+	/*3.do{|i| var del = (i+1)*0.1;
+		wetsig = CombC.ar(wetsig, del, SinOsc.kr(del*0.1).range(del*0.1,del),(i+1)*decay,0.4,wetsig*0.6);
+	};*/
+	/*sig = ((1-mix)*drysig) + (mix*wetsig);*/
+	sig = FreeVerb.ar(sig, 0.2, 0.7, 0.4);
+	Out.ar(out, Pan2.ar(sig*amp, SinOsc.kr(LFNoise0.kr(0.8).range(0.1,80.0)).range(-0.75,0.8)));
+}).store;
+
+
 
 SynthDef(\dist_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	var sig,drysig, wetsig;
@@ -177,25 +195,25 @@ SynthDef(\field_grain, { |out=0, gate = 1, amp = 1,pos=0,sndbuf, envbuf, trate=1
 
 ~combPerc = Synth(\perc_effect, [\in, ~percBus], ~percGroup, \addAfter);
 
-~kick_files = (Platform.resourceDir +/+ "sounds/kicks/*.wav").pathMatch;
+~kick_files = ("/media/numina/T7_numina/Samples/kicks/*.wav").pathMatch;
 ~kicks = ~kick_files.collect({|i| Buffer.read(s, i); });
 
-~hat_files = "Drums/HiHat/*.wav".pathMatch;
+~hat_files = "/media/numina/T7_numina/Samples/HiHat/*.wav".pathMatch;
 ~hats = ~hat_files.collect({|i| Buffer.read(s, i); });
 
-~cymbal_files = "Drums/Cymbal/*.wav".pathMatch;
+~cymbal_files = "/media/numina/T7_numina/Samples/Cymbal/*.wav".pathMatch;
 ~cymbals = ~cymbal_files.collect({|i| Buffer.read(s, i); });
 
-~combo_files = "Drums/Combo/*.wav".pathMatch;
+~combo_files = "/media/numina/T7_numina/Samples/Combo/*.wav".pathMatch;
 ~combo = ~combo_files.collect({|i| Buffer.read(s, i); });
 
-~mallet_files = "Drums/Mallet_Drum/*.wav".pathMatch;
+~mallet_files = "/media/numina/T7_numina/Samples/Mallet_Drum/*.wav".pathMatch;
 ~mallets = ~mallet_files.collect({|i| Buffer.read(s, i); });
 
-~hand_files = "Drums/Hand_Drum/*.wav".pathMatch;
+~hand_files = "/media/numina/T7_numina/Samples/Hand_Drum/*.wav".pathMatch;
 ~hand_drums = ~hand_files.collect({|i| Buffer.read(s, i); });
 
-~field_rec_files = (Platform.resourceDir +/+ "sounds/field_recs/*.wav").pathMatch;
+~field_rec_files = "~/repositories/rationalworld/AE_Samples/*.wav".pathMatch;
 ~field_recs = ~field_rec_files.collect({|sample| Buffer.read(s, sample); });
 ~grainfield_recs = ~field_rec_files.collect({|sample| Buffer.readChannel(s, sample, channels: [0] ); });
 

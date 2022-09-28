@@ -1,12 +1,16 @@
 (
 fork {
 //SYNTHDEFS
-
+/*
 SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
 	var env, sig;
 	env = EnvGen.ar(Env.perc(0.001, release),doneAction: 2);
 	sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
 	Out.ar(out, sig*env*amp, pan); }).store;
+
+	*/
+
+/*
 
 SynthDef(\perc_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	var sig,drysig, wetsig;
@@ -17,7 +21,7 @@ SynthDef(\perc_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	};
 	sig = ((1-mix)*drysig) + (mix*wetsig);
 	Out.ar(out, Pan2.ar(sig*amp, SinOsc.kr(LFNoise0.kr(0.8).range(0.1,80.0)).range(-0.25,0.25)));
-}).store;
+}).store;*/
 
 SynthDef(\analysis, {|input=0 ampBus freqBus|
 	var sig,amp,freq,hasFreq;

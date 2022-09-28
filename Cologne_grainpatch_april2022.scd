@@ -144,7 +144,7 @@ SynthDef(\pumper, {|in out amp=0.5|
 ~bike0smpls = Array.fill(2, { Buffer.alloc(s, 1.0 * s.sampleRate, 1); });
 ~bike1smpls = Array.fill(2, { Buffer.alloc(s, 1.0 * s.sampleRate, 1); });
 
-~samplePath2 = "/media/numian/DATAPANIC/Dropbox/Samples".asString;
+~samplePath2 = "/media/numina/DATAPANIC/Dropbox/Samples/AnsageEnde/".asString;
 ~testSample = Buffer.read(s, ~samplePath2++"/Gamelan/Slentem/SlentemPl1.wav" );
 ~win1 = Buffer.sendCollection(s, Signal.hammingWindow(1024));
 
