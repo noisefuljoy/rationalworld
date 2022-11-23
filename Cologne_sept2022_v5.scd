@@ -1,25 +1,26 @@
 /*
 work on percussion sounds
-
-
-
 */
-
-
-
-
 /*
 frequentie op web sdr: 7074.72
 14075.00
-chinese radioL 13809.97
+
+THIS ONE WORKS NOW:
+13659.72
+
+
+
+chinese radioL
+13600.15
+turkish radio:
+13633.86
 */
-
-
 (
+
 fork{
 Require("~/repositories/rationalworld/Cologne_tonalities_v2.scd");
 2.0.wait;
-
+	"./pulsejack".unixCmd;
 /*	"jack_connect SuperCollider:out_1 system:playback_1".unixCmd;
 	"jack_connect SuperCollider:out_2 system:playback_2".unixCmd;*/
 
@@ -38,9 +39,27 @@ MIDIIn.connectAll;
 
 ~synthGroup = Group.new;
 ~percGroup = Group.tail(~synthGroup);
+~insects = Group.tail(~synthGroup);
+
 ~recGroup = Group.after(~synthGroup);
 ~effectGroup = Group.after(~synthGroup);
 ~effectGroup2 = Group.after(~effectGroup);
+
+~transformChain1 = Group.after(~percGroup);
+~transformChain2 = Group.after(~percGroup);
+~transformChain3 = Group.after(~percGroup);
+~transformChain4 = Group.after(~percGroup);
+~transBuses = Array.fill(4, { Bus.audio(s, 1); });
+
+
+
+/* transform synth*/
+/*
+~trans1 = Synth(\transform1, [\in, ~transBuses[0]], ~transformChain1);
+~trans2 = Synth(\transform2, [\in, ~transBuses[1]], ~transformChain2);
+~trans3 = Synth(\transform3, [\in, ~transBuses[2]], ~transformChain3);
+~trans4 = Synth(\transform4, [\in, ~transBuses[3]], ~transformChain4);
+*/
 
 ~synthChooser = 1;
 
@@ -49,7 +68,7 @@ MIDIIn.connectAll;
 
 
 /*BUSES*/
-~anaBus = Bus.audio(s, 1);
+~anaBus = 8;
 ~tenvolBus = Bus.audio(s, 2);
 
 
@@ -92,11 +111,13 @@ MIDIIn.connectAll;
 //~crusher.free;
 /* EFFECT SYNTHS */
 
+// a custom envelope
+~winenv = Env([0, 1, 0], [3, 1], [8, -8]);
+~wenv = Buffer.sendCollection(s, ~winenv.discretize, 1);
+
 ~combPerc = Synth(\perc_effect, [\in, ~percBus], ~percGroup, \addAfter);
-~grainPerc = Synth(\grain_perc, [\in, ~percGrainBus], ~percGroup, \addAfter);
+~grainPerc = Synth(\grain_perc, [\in, ~percGrainBus, \envbuf, ~wenv], ~percGroup, \addAfter);
 
-
-	//~grainPerc.free
 
 
 ~combC = Synth(\tenoricomb, [\in, ~combBus,\mix,0.2,\out,~channels[3] ], ~effectGroup);
@@ -333,7 +354,7 @@ Ndef(\sdr).fadeTime = 32;
 
 Ndef(\sdr, {
 
-	var sig = SoundIn.ar([4,5]);
+	var sig = SoundIn.ar([4,5],0.2);
 
 	sig = sig;
 
@@ -351,182 +372,10 @@ Ndef(\sdr, {
 
 
 
-/*
-MIDIdef.cc(\firstController, {|val, num, cc, chan|
-		[val, num, cc, chan].postln;
-		if ( num == 86,  { ~percsynth1.set(\srate,~srateSpec.map(val/127) ); });
-		if ( num == 87,  { ~percsynth2.set(\srate,~srateSpec.map(val/127) ); });
-		if ( num == 78,  { ~percsynth1.set(\ffreq,~ffreqSpec.map(val/127) ); });
-		if ( num == 79,  { ~percsynth2.set(\ffreq,~ffreqSpec.map(val/127) ); });
-
-		/* SET TUNING */
-		if ( num == 39, {
-			if ( ~myscaleChoose2 != 2, {
-				~myscaleChoose2 = ~myscaleChoose2 + 1 }, { ~myscaleChoose2 = 0; });
-			case
-			{ ~myscaleChoose2 == 0 } { "chinese".postln; ~scale = ~chinese[0]; }
-			{ ~myscaleChoose2 == 1 } { "pseudoquarter".postln;~scale = ~quarter[0]; }
-			{ ~myscaleChoose2 == 2 } { "thirtyseven".postln;~scale = ~thirtyseven[0]; }; });
-
-		if ( num == 42, {
-		if ( ~scaleNum != 5, { ~scaleNum = ~scaleNum + 1;  }, { ~scaleNum = 0; });
-		~scale = ~typeScale[~scaleNum]; ~scaleNum.postln; });
-		if ( num == 43, {
-		if ( ~scaleNum != 0, { ~scaleNum = ~scaleNum - 1;  }, { ~scaleNum = 5; });
-		~scale = ~typeScale[~scaleNum]; ~scaleNum.postln; });
-	//select scale type
-		if ( num == 44, { if ( ~typeScaleNum != 1, { ~typeScaleNum = ~typeScaleNum + 1; },
-		{ ~typeScaleNum = 0; });
-		case
-		{ ~typeScaleNum == 0 }  { ~typeScale = ~oton }
-		{ ~typeScaleNum == 1 }  { ~typeScale = ~uton };
-		~scale = ~typeScale[~scaleNum]; ~typeScaleNum.postln; });
-
-		if ( num == 40, {
-			if ( ~myscaleChoose != 9, {
-				~myscaleChoose = ~myscaleChoose + 1 }, { ~myscaleChoose = 0; });
-			"microtonal".postln; ~scale = ~micro[~myscaleChoose]; });
-		if ( num == 41, { "pelog".postln;
-			if ( ~pelogChoose != 2, { ~pelogChoose = ~pelogChoose + 1; } , { ~pelogChoose = 0 });
-			~scale = ~pelog[~pelogChoose]; });
-		~pelogChoose.postln;
-	//select scale number
-
-		if ( num == 74, {
-			if ( ~whatBuf != (~ambientsLeft.size - 1), {
-				~whatBuf = ~whatBuf + 1;
-		}, { ~whatBuf = 0;   });
-		});
-
-		if ( num == 75, { "malm sample".postln;
-			if ( ~whatMalm != (~malm.size - 1), {
-				~whatMalm = ~whatMalm + 1;
-		}, { ~whatMalm = 0;   });
-		});
-
-		/* set main grain duration */
-		if ( num == 50, {
-			~maingrainDurBus.set( ~maingrainDurSpec.map(val/127));
-		});
-
-		if ( num == 84, {
-			~toycombC.set(\mix, val/127);
-
-		});
 
 
-		if ( num == 85, {
-			~tapecombC.set(\mix, val/127);
-		});
-
-
-	//record toy piano
-		case
-		{ num == 68 }
-		{ if ( val == 127, { "record toy piano. input 0".postln;
-			fork{
-				if ( ~index == 0, {
-					~rec1 = Synth(\tenori_recorder,[\in,0,\fftbuf, ~fftBuf,\recbuf, ~recBufs[1] ], ~recGroup);
-				}, {
-					~rec1 = Synth(\tenori_recorder,[\in,0,\fftbuf, ~fftBuf,\recbuf, ~recBufs[0] ], ~recGroup);
-				});
-
-
-				if ( ~index == 0, { ~index=1;}, { ~index=0; });
-			};
-			},{ ~rec1.free; });
-		}
-		//record tape
-		{ num == 69 }
-		{
-			if ( val == 127, { "record tape. input 2".postln;
-			fork{
-				if ( ~index2 == 0, {
-					~rec2 = Synth(\tenori_recorder,[\in,2,\fftbuf, ~fftBuf2,\recbuf, ~recBufs2[1] ], ~recGroup);
-				}, {
-					~rec2 = Synth(\tenori_recorder,[\in,2,\fftbuf, ~fftBuf2,\recbuf, ~recBufs2[0] ], ~recGroup);
-				});
-
-
-				if ( ~index2 == 0, { ~index2 =1;}, { ~index2 =0; });
-			};
-			},
-			{
-			~rec2.free;
-			}
-			);
-	}
-	//record voice
-	{ num == 70 }
-	{
-			if ( val == 127, { "record recorder. input 1".postln;
-			fork{
-				if ( ~index3 == 0, {
-					~rec3 = Synth(\tenori_recorder,[\in,1,\fftbuf, ~fftBuf3,\recbuf, ~recBufs3[1] ], ~recGroup);
-				}, {
-					~rec3 = Synth(\tenori_recorder,[\in,1,\fftbuf, ~fftBuf3,\recbuf, ~recBufs3[0] ], ~recGroup);
-				});
-
-
-				if ( ~index3 == 0, { ~index3 =1;}, { ~index3 =0; });
-			};
-			},
-			{
-			~rec3.free;
-			}
-			);
-	};
-	if ( num == 82, { ~combC.set(\mix, val/127); });
-	if ( num == 83, { ~crusher.set(\mix, val/127); });
-	if ( num == 59, {
-			if ( ~whatSlen != (~slentem.size - 1), { ~whatSlen = ~whatSlen + 1; }, { ~whatSlen = 0; });
-		~whatSlen.postln; });
-	if ( num == 65, {
-			if ( ~whatDrone != (~drones.size - 1), { ~whatDrone = ~whatDrone + 1; }, { ~whatDrone = 0; });
-		~whatDrone.postln; });
-		if ( num == 89, { ~dur = ~durSpec.map(val/127); ~grainAmp = ~ampSpec.map(val/127); });
-		if ( num == 57, {
-			if ( ~droneMulChoose != 2, { ~droneMulChoose = ~droneMulChoose + 1; },
-				{ ~droneMulChoose = 0; });
-			~droneMul = ~dronemularr[~droneMulChoose];    });
-	//synth manipulation
-	if ( num == 32, {
-			~widthBus.set(~widthSpec.map(val/127));
-		});
-
-	if ( num == 0, {
-	~sideChainer.set(\volume, ~drumGainSpec.map(val/127));
-			//~fmodBus.set(~fmodSpec.map(val/127));
-		});
-
-	if ( num == 33, {
-			~phasemodBus.set(~phasemodSpec.map(val/127));
-		});
-	if ( num == 1, {
-	~tenoriVolume.set(\volume, ~drumGainSpec.map(val/127));
-
-
-			//~bpmodBus.set(~bpmodSpec.map(val/127));
-		});
-
-	if ( num == 34, {
-			~fmfreqBus.set(~fmfreqSpec.map(val/127));
-		});
-	if ( num == 2, {
-			~fmindexBus.set(~fmindexSpec.map(val/127));
-		});
-		if ( num == 35, {
-			~fmfreqBus2.set(~fmfreqSpec.map(val/127));
-		});
-	if ( num == 3, {
-			~fmindexBus2.set(~fmindexSpec.map(val/127));
-		});
-
-	}, chan: 0);
-*/
-
-
-/* nanoPad */
+	~fcricket_trigBus = Bus.control(s, 1).set(58.82);
+	~cicada_trigBus = Bus.control(s, 1).set(0.2);
 
 	~percReleaseBus = Bus.control(s, 1).set(0.001);
 
@@ -534,16 +383,49 @@ MIDIdef.cc(\firstController, {|val, num, cc, chan|
 	~phasemIndexBus = Bus.control(s, 1).set(0);
 	~phaseModFreq = Bus.control(s, 1).set(8);
 
-	~phasemIndexSpec = [0.0, 300.0, \linear, 0.01].asSpec;
+	~phasemIndexSpec = [0.01, 1000.0, \linear, 0.01].asSpec;
+	~freqRange = [100, 800, \linear, 10].asSpec;
 	~releaseRange = [0.1,1.0, 5, 0.001].asSpec;
+	~relmulSpec = [1.0, 10.0, \exp, 0.001].asSpec;
+
+	~fcrickets_trigSpec = [58.82, 400.0, \linear, 0.01].asSpec;
+	~cicada_trigSpec = [0.001, 80.0, \linear, 0.01].asSpec;
+
+	~relMul = 1;
+
+
+
+
+
+
+
 
 MIDIdef.cc(\secondController, {|val, num, cc, chan|
-		//[val, num, cc, chan].postln;
-		"setting phase index".postln;
-		case { num == 82 }  { ~phasemIndexBus.set(~phasemIndexSpec.map(val/127)); };
+		[val, num, cc, chan].postln;
+
+		case
+		{ num == 82 }
+		{ ~phasemIndexBus.set(~phasemIndexSpec.map(val/127)); "setting phase index".postln; }
+		{ num == 50 }
+		{ ~relMul = ~relmulSpec.map(val/127); "increasing perc rel".postln; }
+		{ num == 76 }
+		{ if ( val == 127, { 	~fieldcricket = Synth(\fieldcricket, [\tfreqBus, ~fcricket_trigBus.index, \recout, ~anaBus], ~insects); }, { ~fieldcricket.set(\gate, 0); }); }
+		{ num == 84 }
+		{
+			~fcricket_trigBus.set( ~fcrickets_trigSpec.map(val/127));
+		}
+		{ num == 77 }
+		{ if ( val == 127, { 	~cicada_3calls = Synth(\cicada_3calls, [\tfreqBus, ~cicada_trigBus.index, \recout, ~anaBus], ~insects); }, { ~cicada_3calls.set(\gate, 0); }); }
+		{ num == 85 }
+		{
+			~cicada_trigBus.set( ~cicada_trigSpec.map(val/127));
+		}
 
 		}, chan: 0);
 
+
+
+/* nanoPad */
 
 MIDIdef.new(\nanoPad, {|val num chan dev|
 	var output;
@@ -555,37 +437,37 @@ MIDIdef.new(\nanoPad, {|val num chan dev|
 
 
 	case
-		{ num == 36 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)  ], ~percGroup);
-			}
-	{ num == 37 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 36 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus], ~percGroup);
 	}
-	{ num == 38 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 37 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus], ~percGroup);
 	}
-	{ num == 39 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 38 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 40 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 39 } { Synth(\perc, [\out, output,\freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 41 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 40 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 42 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 41 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 43 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 42 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)  * ~relMul, \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 44 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 43 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)  * ~relMul, \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 45 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 44 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul , \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 46 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 45 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127),\phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
 	}
-	{ num == 47 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 46 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127),\phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)  * ~relMul, \recout, ~anaBus ], ~percGroup);
 	}
-	{ num == 48 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 47 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127),\phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
 	}
-	{ num == 49 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 48 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127),\phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
 	}
-	{ num == 50 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 49 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index, \amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
 	}
-	{ num == 51 } { Synth(\perc, [\out, output, \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127)   ], ~percGroup);
+	{ num == 50 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127), \phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
+	}
+	{ num == 51 } { Synth(\perc, [\out, output, \freq, ~freqRange.map(val/127),\phasemIndexBus, ~phasemIndexBus.index,\amp,~ampRange.map(val/127),\release,~releaseRange.map(val/127) * ~relMul, \recout, ~anaBus  ], ~percGroup);
 	};
 
 
@@ -595,39 +477,7 @@ MIDIdef.new(\nanoPad, {|val num chan dev|
 
 
 
-MIDIdef.noteOff(\noteoff, {|vel note chan srcid|
-		//[vel, note, chan, srcid].postln;
 
-		if ( chan > 10,
-{
-	if ( chan != 14, {
-	if(~notes[chan][note].notNil, {
-						~notes[chan][note].set(\gate, 0); ~notes[chan][note] = nil;
-			});
-				},
-				{
-					~notes[chan][note].stop; ~notes[chan][note] = nil;
-				});
-}, {
-				if(~notes[chan][note].notNil, {
 
-			if ( (chan == 7) or: (chan == 8) or: (chan == 9) or: (chan == 14), { ~notes[chan][note].stop; },
-				{
-
-		~notes[chan][note].set(\gate, 0);
-			});
-			//~notes[chan][note].do{|item| item.set(\gate, 0); };
-			~notes[chan][note] = nil;
-			});
-		});
-});
 };
 )
-
-/*
-MIDIdef.cc(\secondController, {|val, num, chan, cc| [val, num, chan, cc].postln; }, chan: 1);
-
-MIDIdef.cc(\gerriController, {|val, num, chan, cc| [val, num, chan, cc].postln; }, chan: 2);
-
-
-MIDIdef.noteOn(\nanoPad, {|vel note chan cc| [vel, note].postln; }, chan: 9);*/

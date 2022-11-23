@@ -1,3 +1,15 @@
+To do in code:
+- meer perc synths
+- insects
+- meer expressie en transformatie met gamepad
+- transformatie chains
+- meer sample mogelijkheden
+- scala tunings
+
+
+
+
+
 Rehearsal / Research Plan
 Sjoerd, Markus, Verena
 11. - 14. April 2022
@@ -18,11 +30,13 @@ Try order other way around
 At the end: radio tones / recorder Flageolettes / psaltery notes
 —
 Open and peaceful note collection in 466 Hz
-C#
-F#
-A#
+
+transposed for OP-1
+D
+G
+B
+F
 E
-Eb
 
 —
 

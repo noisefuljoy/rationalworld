@@ -2,12 +2,13 @@
 fork {
 //SYNTHDEFS
 /*
-SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
-	var env, sig;
+SynthDef(\perc, {|out=0 amp=0.5 release=0.2 bufnum pan=0 phasemIndexBus|
+	var env, sig,phasemIndex;
+	phasemIndex = In.kr(phasemIndexBus, 1);
 	env = EnvGen.ar(Env.perc(0.001, release),doneAction: 2);
-	sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
-	Out.ar(out, sig*env*amp, pan); }).store;
-
+	//sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
+	sig = SinOsc.ar(440, LFSaw.kr(LFNoise0.kr(16.8).range(0.1,85.0),mul:phasemIndex).range(-2pi,2pi),0.5);
+	Out.ar(out, sig*env*amp); }).store;
 	*/
 
 /*

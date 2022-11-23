@@ -49,7 +49,7 @@ SynthDef(\radiorecorder, {|in bufnum|
 	var input = In.ar(in, 1);
 	input = Limiter.ar(input,1, 0.001);
 	//input = Compander.ar(input, input, 0.01, 1, 0.01, 0.001, 0.1,1000);
-	input = Compander.ar(input, input, 0.001,1,0.01,0.001,0.1,100);
+	input = Compander.ar(input, input, 0.001,1,0.01,0.001,0.1,200);
 	//for hardware input
 	//RecordBuf.ar(SoundIn.ar(in),bufnum);
 	//for bus
@@ -115,6 +115,19 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 Out.kr(amplitudeBus, amplitude); }).store;
 
 
+//for recording zitar
+SynthDef(\busRecorder, {|in=0 amplitudeBus fftbuf recbuf|
+var input = In.ar(in);
+var chain = FFT(fftbuf, input);
+var onsets = Onsets.kr(chain,0.15);
+var amplitude = Amplitude.kr(input);
+
+		input = Compander.ar(input, input, 0.1,1,0.1,0.001,0.1,6);
+//amplitude.poll;
+RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
+Out.kr(amplitudeBus, amplitude); }).store;
+
+
 //3rd generation granulation
 SynthDef(\regranulate, {|out=0 recOut ampBus lengthBus start=0 endBus octave=1 trig=1 reverse=1 bufnum envbuf pan=0 vectorOut nyquist|
 	//var trigger = EnvGen.kr(Env([0,1,0],[0.001,0.001]),trig);
@@ -165,12 +178,12 @@ SynthDef(\pumper, {|in out amp=0.5|
 
 3.0.wait;
 //groups
-~synthGroup2 = Group.new;
+~synthGroup2 = Group.tail(~synthGroup);
 ~gerriGroup = Group.new(~synthGroup2);
 ~noteGroups2 = Array.fill(8, { Group.new(~gerriGroup); });
 
 
-~recGroup = Group.new;
+	~recGroup = Group.after(~synthGroup2);
 //groups for sample loopers
 ~playGroups = Array.fill(2, { Array.fill(2, { Group.head(~synthGroup2); }); });
 ~recGroups = Array.fill(2, {|i| Array.fill(2, {|j| Group.after(~playGroups[i][j]); }); });
@@ -390,8 +403,13 @@ if ( ~recButtons[i][j] == 1, {
 
 
 	if ( val == 127, {
-	"rec direct input 0".postln;
-							~recsynth1 = Synth(\zitarRecorder, [\in,~selectInputs[0],\recbuf, ~bike0smpls[~samNum1],\fftbuf, ~fftbuffers[0]]); }, { ~recsynth1.free; });
+
+							if ( ~inSelector1 != 2, { "rec direct input 0".postln;
+							~recsynth1 = Synth(\zitarRecorder, [\in,~selectInputs[0],\recbuf, ~bike0smpls[~samNum1],\fftbuf, ~fftbuffers[0]], ~recGroup);
+							}, { "rec electronics".postln;
+							~recsynth1 = Synth(\busRecorder,[\in, ~anaBus,\recbuf, ~bike0smpls[~samNum1],\fftbuf, ~fftbuffers[0] ],~recGroup); });
+
+							}, { ~recsynth1.free; });
 					}, {
 	if ( val == 127, {
 
@@ -409,8 +427,8 @@ if ( ~recButtons[i][j] == 1, {
 					{ ~inSelector1 == 0 } { "input 0".postln; ~selectInputs.put(0, 0);
 						~firstgeneration_grainsample1 = {   ~bike0smpls[~samNum1];    }; }
 					{ ~inSelector1 == 1 } { "input 1".postln; ~selectInputs.put(0, 1); }
-					{ ~inSelector1 == 2 } { "input 2".postln; ~selectInputs.put(0, 2); }
-				{ ~inSelector1 == 3 } { "input 2".postln; ~selectInputs.put(0, 4); };
+					{ ~inSelector1 == 2 } { "input electronics".postln; ~selectInputs.put(0, ~anaBus); }
+				{ ~inSelector1 == 3 } { "input 3, radio".postln; ~selectInputs.put(0, 4); };
 
 
 	}
@@ -421,8 +439,17 @@ if ( ~recButtons[i][j] == 1, {
 	if ( ~fbgates[1] == 0, {
 
 	if ( val == 127 , {
-	"rec direct input 1".postln;
-	~recsynth2 = Synth(\zitarRecorder, [\in,~selectInputs[1],\recbuf, ~bike1smpls[~samNum2],\fftbuf, ~fftbuffers[0]]); }, { ~recsynth2.free; }); }, {
+
+
+	if ( ~inSelector2 != 2, { "rec direct input 1".postln;
+	~recsynth2 = Synth(\zitarRecorder, [\in,~selectInputs[1],\recbuf, ~bike1smpls[~samNum2],\fftbuf, ~fftbuffers[0]], ~recGroup);
+								},
+			{ "rec electronics".postln;
+							~recsynth2 = Synth(\busRecorder,[\in, ~anaBus,\recbuf, ~bike1smpls[~samNum2],\fftbuf, ~fftbuffers[0] ],~recGroup); });
+
+
+
+						}, { ~recsynth2.free; }); }, {
 	if ( val == 127, {
 							"recording grain sample 1".postln;
 							Synth(\recrecorder,[\in, ~recrecbus[1][1],
@@ -436,8 +463,8 @@ if ( ~recButtons[i][j] == 1, {
 						~firstgeneration_grainsample2 = {   ~bike1smpls[~samNum2];    };
 					}
 					{ ~inSelector2 == 1 } { "input 1 ".postln; ~selectInputs.put(1, 1); }
-					{ ~inSelector2 == 2 } { "input 2".postln; ~selectInputs.put(1, 2); }
-					{ ~inSelector2 == 3 } { "input 2".postln; ~selectInputs.put(1, 4); };
+					{ ~inSelector2 == 2 } { "input electronics".postln; ~selectInputs.put(1, ~anaBus); }
+					{ ~inSelector2 == 3 } {  "input 3, radio".postln; ~selectInputs.put(1, 4); };
 	}
 
 
